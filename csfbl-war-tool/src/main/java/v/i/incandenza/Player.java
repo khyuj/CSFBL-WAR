@@ -27,7 +27,7 @@ public class Player {
 	}
 	
 	public void setXRAA(String xRaa) {		
-		this.oWAR = Double.parseDouble(xRaa);		
+		this.oWAR = this.oWAR + Double.parseDouble(xRaa);		
 	}
 	
 	public void setYear(String year) {
@@ -72,14 +72,7 @@ public class Player {
 	
 	public double getDollars() {
 		return this.dollarWAR;
-	}
-	
-	public static Comparator<Player> nameComparator = new Comparator<Player>() {
-		@Override
-		public int compare(Player p1, Player p2) {
-			return (int) (p1.getName().compareTo(p2.getName()));
-		}
-	};         
+	}	         
 	
 	public Player(String name, String position, Team team, String xRaa, String year) {
 		if(name != null) {

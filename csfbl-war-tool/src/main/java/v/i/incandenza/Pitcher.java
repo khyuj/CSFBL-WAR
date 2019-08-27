@@ -12,6 +12,7 @@ public class Pitcher {
 	private int gameStarted;
 	private double fIP;
 	private double eRA;
+	private ArrayList<Innings> inningsTotal = new ArrayList<Innings>();
 	private int tWAR;
 	private int dollarWAR;
 	private int salarY;
@@ -50,6 +51,11 @@ public class Pitcher {
 	
 	public void setSalary(String salary) {
 		this.salarY = Integer.parseInt(salary);
+	}
+	
+	public void setInnings(String innings, String team) {
+		Innings newInnings = new Innings(innings, team);
+		this.inningsTotal.add(newInnings);
 	}
 	
 	public String getName() {
@@ -113,6 +119,10 @@ public class Pitcher {
 	
 	public int getDollars() {
 		return this.dollarWAR;
+	}
+	
+	public Innings getInnings(int index) {
+		return this.inningsTotal.get(index);
 	}
 	
 	public Pitcher(String name, String position, Team team, String year) {
