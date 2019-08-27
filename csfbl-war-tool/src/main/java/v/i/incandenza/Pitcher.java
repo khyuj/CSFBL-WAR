@@ -30,11 +30,11 @@ public class Pitcher {
 	}
 	
 	public void setStarts(String starts) {
-		this.gameStarted = Integer.parseInt(starts);
+		this.gameStarted = gameStarted + Integer.parseInt(starts);
 	}
 	
 	public void setGames(String games) {
-		this.gameTotal = Integer.parseInt(games);
+		this.gameTotal = gameTotal + Integer.parseInt(games);
 	}
 	
 	public void setFIP(String fip) {		
@@ -123,6 +123,10 @@ public class Pitcher {
 	
 	public Innings getInnings(int index) {
 		return this.inningsTotal.get(index);
+	}
+	
+	public ArrayList<Innings> getInningsArray() {
+		return this.inningsTotal;
 	}
 	
 	public Pitcher(String name, String position, Team team, String year) {

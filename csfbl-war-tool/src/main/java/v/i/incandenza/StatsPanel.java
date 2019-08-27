@@ -207,7 +207,9 @@ public class StatsPanel extends JPanel {
         				Element oNode = batParents.get(a+17);
         				String xRaa = oNode.text();       				
         				String playerYear = yearList.get(i);       				      				
-        				boolean match = false;     				
+        				boolean match = false; 
+        				boolean switch = false;
+        				int matchNum = 0;
         				//check against existing list
         				for(int b = 0; b < playerList.size(); b++) {        					
         					Player playerCheck = playerList.get(b);
@@ -218,16 +220,21 @@ public class StatsPanel extends JPanel {
 	        					for (int c = 0; c < teamCheck.size(); c++) {	        					
 	            					if(!(teamCheck.get(c).equals(tEam))) {
 	            						match = true;            						
-	            						playerCheck.setTeam(tEam);
-	            						playerCheck.setXRAA(xRaa);
+	            						switch = true;
+	            						matchNum = b;
 	            					}
 	            					else {
-	            						match = true;	                					
+	            						match = true;
+	            						matchNum = b;
 	            					}        						
 	            				}
 	        				}        					        					
         				}
-        				if(match == false) {        					
+        				if(match == true && switch == true) {
+        					playerList.get(matchNum).setTeam(tEam);
+        					playerList.get(matchNum).setXRAA(xRaa);
+        				}
+        				if(match == false && switch == false) {        					
         					Player newPlayer = new Player(playerName, playerPos, tEam, xRaa, playerYear);
         					playerList.add(newPlayer);    						
         				}        				
@@ -260,12 +267,11 @@ public class StatsPanel extends JPanel {
         						for (int c = 0; c < teamCheck.size(); c++) {	        					
 	        						if(!(teamCheck.get(c).equals(tEam))) {
             							match = true;
-            							switchTeam = true;            							
-            							matchNum = c;
+            							switchTeam = true;
+            							matchNum = b;
             						}
             						else {
             							match = true;
-                						matchNum = c;                						
             						}        						
 	        					}  
         					}
@@ -279,22 +285,25 @@ public class StatsPanel extends JPanel {
         					pitcherList.add(newPitcher);					
         				}  
         				else if(match == true && switchTeam == true) {
-        					pitcherList.get(matchNum).setTeam(tEam);
-        					pitcherList.get(matchNum).setInnings(playerInnings, tEam.getName());
-        					pitcherList.get(matchNum).setERA(playerERA);
-        				}
-        				else if(match == true && switchTeam == false) {
+        					double tempInnings = 0;
+        					//collect year's innings total from pitcher object
+        					for(int d = 0; d < pitcherList.get(matchNum).getInningsArray().size(); d++) {
+        						tempInnings = tempInnings + pitcherList.get(matchNum).getInnings(d).getInnings();
+        					}
+        					double tempRuns = ((playerERA*playerInnings)/9) + ((pitcherList.get(matchNum).getERA()*tempInnings)/9);
+        					double tempERA = (tempRuns/(tempInnings+playerInnings))*9;
+        					pitcherList.get(matchNum).setERA(tempERA);
         					pitcherList.get(matchNum).setGames(playerGames);
         					pitcherList.get(matchNum).setStarts(playerStarts);
+        					pitcherList.get(matchNum).setInnings(playerInnings, tEam.getName());
+        					pitcherList.get(matchNum).setTeam(tEam);
         				}
         			}
         			for(int a = 0; a < xpitParents.size(); a+=19) {
         				//get data from extended pitching stats page on pitcher
-        				Element posNode = xpitParents.get(a);
-        				String playerPos = posNode.text();        				
         				Element nameNode = xpitNames.get(a/19);
         				String playerName = nameNode.attr("title");        				
-;        				Element fIP = xpitParents.get(a+18);        				
+        				Element fIP = xpitParents.get(a+18);        				
         				String playerFIP = fIP.text();
         				if(playerFIP.equals("-")) {
         					playerFIP = "0";
@@ -302,7 +311,7 @@ public class StatsPanel extends JPanel {
         				String playerYear = yearList.get(i);       				      				
         				boolean match = false;
         				boolean switchTeam = false;
-        				int matchIndex = 1;
+        				int matchNum = 0;
         				//add or update pitcher by going through existing pitcherList
         				for(int b = 0; b < pitcherList.size(); b++) {
         					Pitcher pitcherCheck = pitcherList.get(b);
@@ -314,31 +323,37 @@ public class StatsPanel extends JPanel {
         						for (int c = 0; c < teamCheck.size(); c++) {	        					
 	        						if(!(teamCheck.get(c).equals(tEam))) {
             							match = true; 
-            							switchTeam = true;
-            							pitcherCheck.setTeam(tEam);            							
-            							matchIndex++;
+            							switchTeam = true;						
+            							matchNum = b;
             						}
             						else {
             							match = true;
-            							pitcherCheck.setFIP(playerFIP);
-            							matchIndex++;
+            							matchNum = b;
             						}
         						}
 	        				}        	
         					//create or modify player based on match status        					
         					if(match == true && switchTeam == true) {
-        						for(int d = 0; d < matchIndex; d++) {	        						
-	    							double fip = 0;
-	    							double innings = 0;           							
-	    							innings = innings + pitcherList.get(b).getInnings(d).getInnings();	  
-	    							double ratio = innings/pitcherList.get(b).getInnings(d).getInnings();	                    					                  					
-	                				fip = ((fip*ratio)+pitcherList.get(b).getFIP())/2;
-	                				playerFIP = Double.toString(((((fip*innings)/9) + ((Double.parseDouble(playerFIP)*pitcherCheck.getInnings(d).getInnings())/9))
-	                							/(innings+pitcherCheck.getInnings(d).getInnings()))*9);                    					
-	                				pitcherList.get(b).setFIP(playerFIP); 
-        						}
-	        				}
-	        				if(match == false) {    					
+        						double tempInnings = 0;
+        						double playerInnings = 0;
+            					//collect year's innings total from pitcher object
+            					for(int d = 0; d < pitcherList.get(matchNum).getInningsArray().size(); d++) {
+            						if(pitcherList.get(matchNum).getInnings(d).getTeam() == tEam) {
+            							playerInnings = pitcherList.get(matchNum).getInnings(d).getInnings();
+            						}
+            						else {
+            							tempInnings = tempInnings + pitcherList.get(matchNum).getInnings(d).getInnings();
+            						}
+            					}
+            					double tempRuns = ((playerFIP*playerInnings)/9) + ((pitcherList.get(matchNum).getFIP()*tempInnings)/9);
+            					double tempFIP = (tempRuns/(tempInnings+playerInnings))*9;                    					
+	                			pitcherList.get(matchNum).setFIP(playerFIP); 
+	                			pitcherList.get(matchNum).setTeam(tEam);
+        					}
+        					else if(match == true && switchTeam == false) {
+            					double tempFIP = playerFIP;
+        					}
+        					else if(match == false) {    					
 	        					Pitcher newPitcher = new Pitcher(playerName, playerPos, tEam, playerYear);
 	        					newPitcher.setFIP(playerFIP);
 	        					pitcherList.add(newPitcher);
@@ -352,6 +367,7 @@ public class StatsPanel extends JPanel {
         		}
         	}
         }
+        //sort list of non-duplicated players for drop-down menu selection
         ArrayList<String> tablePlayers = new ArrayList<String>();
         ArrayList<String> sortedPlayers = new ArrayList<String>();
         for(int i =0; i < playerList.size(); i++) {
