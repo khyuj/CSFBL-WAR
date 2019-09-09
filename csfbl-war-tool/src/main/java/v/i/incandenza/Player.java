@@ -74,21 +74,12 @@ public class Player {
 		return this.dollarWAR;
 	}	         
 	
-	public Player(String name, String position, Team team, String xRaa, String year) {
-		if(name != null) {
-			this.setName(name);
-		}
-		if(position != null) {
-			this.setPos(position);
-		}
-		if(team != null) {
-			this.setTeam(team);
-		}
-		if(xRaa != null) {
-			this.setXRAA(xRaa);
-		}	
-		if(year != null) {
-			this.setYear(year);
-		}			
+	public Player(String name, String position, Team team, String xRaa, String year, String salary) {
+		this.setName(name);
+		this.setPos(position);
+		this.setTeam(team);
+		this.setXRAA(xRaa);
+		this.setYear(year);
+		this.setSalary(salary);
 	}		
 }

@@ -12,10 +12,6 @@ public class Innings {
 		return this.inningsTotal;
 	}
 	
-	public double getFIP() {
-		return this.FIP;
-	}
-	
 	public Innings(String innings, String team) {
 		this.inningsTeam = team;
 		this.inningsTotal = Double.parseDouble(innings);

@@ -125,23 +125,24 @@ public class Pitcher {
 		return this.inningsTotal.get(index);
 	}
 	
+	public double inningsTotal() {
+		double innings = 0;
+		for(int i = 0; i < inningsTotal.size(); i++) {
+			innings = innings + inningsTotal.get(i).getInnings();
+		}
+		return innings;
+	}
+	
 	public ArrayList<Innings> getInningsArray() {
 		return this.inningsTotal;
 	}
 	
-	public Pitcher(String name, String position, Team team, String year) {
-		if(name != null) {
-			this.setName(name);
-		}
-		if(position != null) {
-			this.setPos(position);
-		}
-		if(team != null) {
-			this.setTeam(team);
-		}		
-		if(year != null) {
-			this.setYear(year);
-		}			
+	public Pitcher(String name, String position, Team team, String year, String salary) {
+		this.setName(name);
+		this.setPos(position);
+		this.setTeam(team);
+		this.setYear(year);
+		this.setSalary(salary);		
 	}
 }
 

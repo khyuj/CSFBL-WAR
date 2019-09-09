@@ -29,9 +29,10 @@ public class ButtonHandler implements ActionListener {
 		return yearList;
 	}
 	
+	//upon user clicking "generate" button, parse years and team entered, populate lists, 
+	//and create new tabbed pane for data
 	public void actionPerformed(ActionEvent e) {
-		yearList = new ArrayList<String>();				
-		
+		yearList = new ArrayList<String>();
 		userYears = MainScreen.getYears();		
 		userLeague = MainScreen.getLeague();		
 		if(userYears != null) {
