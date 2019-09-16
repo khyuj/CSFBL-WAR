@@ -32,8 +32,8 @@ public class StatsPanel extends JPanel {
 	private ArrayList<Team> teamList = new ArrayList<Team>();
 	private ArrayList<Player> playerList = new ArrayList<Player>();
 	private ArrayList<Pitcher> pitcherList = new ArrayList<Pitcher>();
-	ArrayList<ArrayList<Object>> fieldingData;
-	ArrayList<Object> playerData;
+	ArrayList<ArrayList<String>> fieldingData;
+	ArrayList<String> playerData;
 	private Document doc;
 	private Document xBat;
 	private Document normPitch;
@@ -43,6 +43,7 @@ public class StatsPanel extends JPanel {
 	private DataTable tableModel;
 	private JTable table;
 	private String gameID;
+	private String currentYear;
 	
 	public void setYears(ArrayList<String> userYears) {		
 		for(int i = 0; i < userYears.size(); i++) {
@@ -61,8 +62,8 @@ public class StatsPanel extends JPanel {
 	    this.revalidate();	 
 	}
 	
-	public void assignFielding(String type, double runs) {
-		System.out.println("assigned!");
+	public void assignFielding(String name, double runs) {
+		System.out.println(name + ": " + runs);		
 	}
 	
 	public StatsPanel(ArrayList<String> years, String league) {
@@ -79,12 +80,15 @@ public class StatsPanel extends JPanel {
 				String url = defaultUrl.concat(leagueID);
 				doc = Jsoup.connect(url).get();					
 				Elements parents = doc.select("tbody > tr > td");
+				Elements leagueDate = doc.select("div > dl > dd");
+				currentYear = leagueDate.get(0).text();
+				currentYear = currentYear.split("\\s|/")[2];
 				int getPBP = 0;
 				for(int a = 0; a < parents.size(); a += 2) {
 					Element parent = parents.get(a);
 					String x = parent.child(0).text();
 					String y = parent.child(0).attr("href");
-					String digits = y.replaceAll("[^\\d]", "" );
+					String digits = y.replaceAll("[^\\d]", "");
 					int teamID = Integer.parseInt(digits);
 					Team z = new Team();
 					z.setValues(x, teamID);					
@@ -423,179 +427,257 @@ public class StatsPanel extends JPanel {
         		}
         	}
         }
-        //get PBP url range for most recent season
-        try {
-        	//get games played this season
-        	String standingsURL = "https://www.csfbl.com/league/standings.asp?leagueid=" + leagueID;
-        	Document standingsPage = Jsoup.connect(standingsURL).get();
-        	Elements winLoss = standingsPage.select("tbody > tr > td");
-        	int wins = 0;
-        	int losses = 0;
-        	for(int z = 0; z < winLoss.size(); z+=13) {
-        		wins = wins + Integer.parseInt(winLoss.get(z+2).text());
-        		losses = losses + Integer.parseInt(winLoss.get(z+3).text());
-        	}
-        	int totalGames = (wins + losses)/2;
-        	//get most recent game played
-			boolean lastGame = false;
-			boolean playoffs = false;
-			int lastIndex = 0;
-			int pageNum = 1;
-			Elements gameList = new Elements();
-			//check team news page for playoff appearance, if none detected then get last game played
-			while(lastGame == false && playoffs == false) {
-				Document teamNews = Jsoup.connect(gameID + "&page=" + pageNum).get();
-				gameList = teamNews.select("tbody > tr > td");
-				for(int z = 0; z < gameList.size(); z++) {
-					if(gameList.get(z).text().contains("World Series") || gameList.get(z).text().contains("playoffs")) {
-						playoffs = true;
-					}
+        //calculate games played this current season regardless of seasons specified, in order to calculate scraping start page
+        int pageNum = 1;
+        if(!currentYear.equals(yearList.get(yearList.size() - 1))) {
+	        try {
+		        String currentURL = "https://www.csfbl.com/league/standings.asp?leagueid=" + leagueID + "&season=" + currentYear;
+				Document currentStandings = Jsoup.connect(currentURL).get();
+				Elements currentWL = currentStandings.select("tbody > tr > td");
+				int currentWins = 0;
+				int currentLosses = 0;
+				for(int z = 0; z < currentWL.size(); z+=13) {
+					currentWins = currentWins + Integer.parseInt(currentWL.get(z+2).text());
+					currentLosses = currentLosses + Integer.parseInt(currentWL.get(z+3).text());
 				}
-				if(playoffs == false) {
-					boolean endPage = false;
-					while(lastGame == false && endPage == false) {
-						for(int a = 0; a < gameList.size(); a++) {
-							if(gameList.get(a).text().contains("Player of the Game")) {
-								lastGame = true;
-								lastIndex = a;
-							}
-							if(a == gameList.size() - 1) {
-								endPage = true;
-							}
-						}
-					}
-					pageNum++;
-				}
-			}
-			//if playoff appearance detected, get last game played before playoffs
-			while(playoffs == true) {
-				Document teamNews = Jsoup.connect(gameID + "&page=" + pageNum).get();
-				gameList = teamNews.select("tbody > tr > td");
-				for(int z = 0; z < gameList.size(); z++) {
-					if(gameList.get(z).text().contains("playoff schedule is now available")) {
-						boolean anotherGame = false;
-						int anotherNum = 0;
-						//check if last game played is cut off by page break
-						for(int y = z; y < gameList.size(); y++) {
-							if(gameList.get(y).text().contains("Player of the Game")) {
-								anotherGame = true;
-								anotherNum = y;
-							}
-						}
-						//if not, get last game played
-						if(anotherGame == true) {
-							playoffs = false;	
-							lastIndex = anotherNum;
-							pageNum++;
-						}
-						//if so, get last game played on next page
-						else {
-							teamNews = Jsoup.connect(gameID + "&page=" + pageNum).get();
-							gameList = teamNews.select("tbody > tr > td");
-							for(int x = 0; x < gameList.size(); x++) {
-								if(gameList.get(x).text().contains("Player of the Game")) {
-									playoffs = false;
-									lastIndex = x;
-								}
-							}
-						}
-					}
-				}
-			}
-			System.out.println(gameList.get(lastIndex).text());
-			String gameLink = gameList.get(lastIndex).child(4).attr("href");
-			gameLink = gameLink.split("&")[0];
-			gameLink = gameLink.replaceAll("[^\\d]", "" );
-			int upperLink = Integer.parseInt(gameLink);
-			String pbpURL = "https://www.csfbl.com/playbyplay.asp?gameid=";
-			boolean season = true;
-			while(season == true) {
-				season = false;
-				Document playByPlay = Jsoup.connect(pbpURL + upperLink).get();
-				Elements metas = playByPlay.select("head > meta");
-				Element date = metas.get(3);
-				String dateString = date.attr("content");
-				dateString = dateString.split(",")[1];
-				dateString = dateString.split(":")[0];
-				String year = dateString.split("/")[2];
-				String month = dateString.split("/")[0];
-				System.out.println(yearList.size());
-				for(int x = 0; x < yearList.size(); x++) {
-					if(year.equals(yearList.get(x))) {
-						season = true;
-					}
-				}
-				if(month.equals(" 10") || month.equals(" 4")) {
-					season = false;
-				}
-				upperLink++;
-			}			
-			//get PbP text
-			int firstID = upperLink - totalGames - 2;
-			System.out.println(firstID);
-			for(int y = firstID; y < upperLink; y++) {
-				Document playByPlay = Jsoup.connect(pbpURL + firstID).get();
-				Element div = playByPlay.selectFirst("div[class=col-sm-8]");
-				String playText = div.text();
-				//split PbP into list of separate plays and remove extraneous strings
-				ArrayList<String> playList = new ArrayList<>(Arrays.asList(playText.split("\\.|:")));
-				for (int f = 0; f < playList.size(); f++) {
-					if(playList.get(f).contains("SCORE:") || playList.get(f).contains("hits.)")) {
-						playList.remove(f);
-					}
-				}
-				System.out.println("plays" + playList.size());
-				Elements pbp = div.children();
-				Elements players = playByPlay.select("tbody > tr > td");
-				fieldingData = new ArrayList<ArrayList<Object>>();
-				//create temporary list of player involved in game
-				for(int c = 0; c < players.size(); c+=3) {
-					String name = players.get(c+1).child(0).text();
-					String last = name.split(" ")[1];
-					String first = name.split(" ")[0];
-					name = last + ", " + first;
-					playerData = new ArrayList<Object>();
-					playerData.add(name);
-					fieldingData.add(playerData);
-				}
-				//go through list of plays, count fielding events, and assign run value to player object. check run values
-				int elementIndex = 0;
-				int playIndex = 0;
-				String player = "";
-				for(int d = 0; d < pbp.size(); d++) {
-					if(pbp.get(d).is("br")) {
-						if(playList.get(playIndex).contains("hits a fly ball")) {
-							if(playList.get(playIndex).contains("error")) {
-								player = pbp.get(d-2).text();
-								assignFielding(player, -0.6);
-							}
-							else if(playList.get(playIndex).contains("tags up")) {
-								player = pbp.get(d-4).text();
-								assignFielding(player, 0.7);
-							}
-							else if(playList.get(playIndex).contains("thrown out")) {
-								player = pbp.get(d-4).text();
-								assignFielding(player, 0.7);
-								//re-check this, temporary
-								player = pbp.get(d-1).text();
-								assignFielding(player, 0.5);
-							}
-							else {
-								player = pbp.get(d-1).text();
-								assignFielding(player, 0.7);
-							}
-						}
-						//etc. etc. etc...
-						playIndex++;
-					}
-					elementIndex = d;
-				}
-			}
+				int currentGames = (currentWins + currentLosses)/2;
+		        pageNum = 1 + Math.abs((Integer.parseInt(currentYear) - Integer.parseInt(yearList.get(yearList.size() - 1))) * ((currentGames/1920)*12));
+	        }
+	        catch(IOException e) {
+				e.getMessage();
+				e.printStackTrace();
+			} 
         }
-		catch(IOException e) {
-		    e.getMessage();
-		    e.printStackTrace();
-		}  
+        //get PBP url range for most recent season
+        for(int u = Integer.parseInt(yearList.get(yearList.size() - 1)) - Integer.parseInt(yearList.get(0)); u >= 0; u--) {
+        	try {
+        		//get total games played this season
+        		int totalGames = 0;
+        		if(yearList.get(u).equals(currentYear)) {
+        			String standingsURL = "https://www.csfbl.com/league/standings.asp?leagueid=" + leagueID + "&season=" + yearList.get(u);
+        			Document standingsPage = Jsoup.connect(standingsURL).get();
+        			Elements winLoss = standingsPage.select("tbody > tr > td");
+        			int wins = 0;
+        			int losses = 0;
+        			for(int z = 0; z < winLoss.size(); z+=13) {
+        				wins = wins + Integer.parseInt(winLoss.get(z+2).text());
+        				losses = losses + Integer.parseInt(winLoss.get(z+3).text());
+        			}
+        			totalGames = (wins + losses)/2;
+        		}
+        		else {
+        			totalGames = 1920;
+        		}
+            	//get most recent game played
+    			boolean lastGame = false;
+    			int upperLink = 0;
+    			String pbpURL = "https://www.csfbl.com/playbyplay.asp?gameid=";
+    			Elements gameList = new Elements();
+    			//check team news page for playoff appearance, if none detected then get last game played
+    			while(lastGame == false) {
+    				Document teamNews = Jsoup.connect(gameID + "&page=" + pageNum).get();
+    				gameList = teamNews.select("tbody > tr > td");
+   					boolean endPage = false;
+   					while(endPage == false) {
+    					for(int a = 0; a < gameList.size(); a++) {
+    						if(gameList.get(a).text().contains("Player of the Game")) {
+    							String gameLink = gameList.get(a).child(4).attr("href");
+    			    			gameLink = gameLink.split("&")[0];
+    			    			gameLink = gameLink.replaceAll("[^\\d]", "" );
+    			    			int lastIndex = Integer.parseInt(gameLink);
+    			    			Document playByPlay = Jsoup.connect(pbpURL + lastIndex).get();
+    			    			Elements metas = playByPlay.select("head > meta");
+    			    			Element date = metas.get(3);
+    			    			String dateString = date.attr("content");
+    			    			dateString = dateString.split(",")[1];
+    			    			dateString = dateString.split(":")[0];
+    			    			String year = dateString.split("/")[2];
+    			    			String month = dateString.split("/")[0];
+    			    			String day = dateString.split("/")[1];
+    			    			if(year.equals(yearList.get(u)) && !month.contains(" 10") && !(month.contains("9") && day.contains("30"))) {
+            						upperLink = lastIndex;
+        							lastGame = true;
+        							endPage = true;
+        							break;
+       							}								
+    						}
+    						if(a == gameList.size() - 1) {
+    							endPage = true;
+    						}
+    					}
+    				}
+    				pageNum++;
+    			}
+    			//get last game played league-wide, beginning search from last game of team above
+    			boolean endGame = false;
+    			while(endGame == false) {
+	    			Document playByPlay = Jsoup.connect(pbpURL + upperLink).get();
+	    			Elements metas = playByPlay.select("head > meta");
+	    			Element date = metas.get(3);
+	    			String dateString = date.attr("content");
+	    			dateString = dateString.split(",")[1];
+	    			dateString = dateString.split(":")[0];
+	    			String year = dateString.split("/")[2];
+	    			String month = dateString.split("/")[0];
+	    			String day = dateString.split("/")[1];
+	    			if(!year.equals(yearList.get(u)) || month.contains("10") || month.contains("4") || (month.equals(" 9") && day.contains("30"))){
+	    				if(endGame == false) {
+							System.out.println(upperLink + ": last league game");
+	    				}
+						endGame = true;
+					}
+	    			if(endGame == false) {
+		    			upperLink++;
+	    			}
+    			}
+    			//get PbP text
+    			upperLink = upperLink - 1;
+    			totalGames = totalGames - 1;
+    			int firstID = upperLink - totalGames;
+    			for(int y = firstID; y < upperLink; y++) {
+    				Document playByPlay = Jsoup.connect(pbpURL + y).get();
+    				Element div = playByPlay.selectFirst("div[class=col-sm-8]");
+    				String playText = div.text();
+    				//split PbP into list of separate plays and remove extraneous strings
+    				ArrayList<String> playList = new ArrayList<>(Arrays.asList(playText.split("\\.|:")));
+    				for (int f = 0; f < playList.size(); f++) {
+    					if(playList.get(f).contains("SCORE:") || playList.get(f).contains("hits.)")) {
+    						playList.remove(f);
+    					}
+    				}
+    				Elements pbp = div.children();
+    				Elements players = playByPlay.select("tbody > tr > td");
+    				fieldingData = new ArrayList<ArrayList<String>>();
+    				//create temporary list of player involved in game
+    				for(int c = 0; c < players.size(); c+=3) {
+    					playerData = new ArrayList<String>();
+    					String name = players.get(c+1).child(0).text();
+    					String last = name.split(" ")[1];
+    					String first = name.split(" ")[0];
+    					name = last + ", " + first;
+    					playerData.add(name);
+    					fieldingData.add(playerData);
+    					System.out.println(name);
+    					for(int p = 0; p < fieldingData.size(); p++) {
+    						System.out.println(fieldingData.get(p).get(0) );
+    					}
+    				}
+    				//go through list of plays, count fielding events, and assign run value to player object. check run values
+    				int startIndex = 0;
+    				int endIndex = 0;
+    				int playIndex = 0;
+    				for(int d = 0; d < pbp.size(); d++) {
+    					if(pbp.get(d).is("br")) {
+    						startIndex = endIndex;
+    						endIndex = d;
+    						if(playList.get(playIndex).contains("hits a fly ball")) {
+    							if(playList.get(playIndex).contains("error")) {
+    								String[] playElements = playList.get(playIndex).split(",");
+    								System.out.println("error");
+    								String player = pbp.get(d-2).text();
+    								int playerIndex = 0;
+    								for(int i = 0; i < fieldingData.size(); i++) {
+    									if(fieldingData.get(i).get(0).contains(player)) {
+    										playerIndex = i;
+    									}
+    								}
+    								player = fieldingData.get(playerIndex).get(0);
+    								assignFielding(player, -0.6);
+    							}
+    							else if(playList.get(playIndex).contains("tags up")) {
+    								System.out.println("sac fly");
+    								String player = pbp.get(d-4).text();
+    								int playerIndex = 0;
+    								for(int i = 0; i < fieldingData.size(); i++) {
+    									if(fieldingData.get(i).get(0).contains(player)) {
+    										playerIndex = i;
+    									}
+    								}
+    								player = fieldingData.get(playerIndex).get(0);
+    								assignFielding(player, 0.7);
+    							}
+    							else if(playList.get(playIndex).contains("thrown out")) {
+    								System.out.println("outfield assist");
+    								String player = pbp.get(d-4).text();
+    								int playerIndex = 0;
+    								for(int i = 0; i < fieldingData.size(); i++) {
+    									if(fieldingData.get(i).get(0).contains(player)) {
+    										playerIndex = i;
+    									}
+    								}
+    								player = fieldingData.get(playerIndex).get(0);
+    								assignFielding(player, 0.7);
+    								//re-check this, temporary
+    								player = pbp.get(d-1).text();
+    								playerIndex = 0;
+    								for(int i = 0; i < fieldingData.size(); i++) {
+    									if(fieldingData.get(i).get(0).contains(player)) {
+    										playerIndex = i;
+    									}
+    								}
+    								player = fieldingData.get(playerIndex).get(0);
+    								assignFielding(player, 0.5);
+    							}
+    							else {
+    								String player = pbp.get(d-1).text();
+    								System.out.println("fly ball catch");
+    								int playerIndex = 0;
+    								for(int i = 0; i < fieldingData.size(); i++) {
+    									if(fieldingData.get(i).get(0).contains(player)) {
+    										playerIndex = i;
+    									}
+    								}
+    								player = fieldingData.get(playerIndex).get(0);
+    								assignFielding(player, 0.7);
+    							}
+    						}
+    						else if(playList.get(playIndex).contains("hits a ground ball")) {
+    							if(playList.get(playIndex).contains("error")) {
+    								System.out.println("ground ball error");
+    								String player = pbp.get(d-2).text();
+    								int playerIndex = 0;
+    								for(int i = 0; i < fieldingData.size(); i++) {
+    									if(fieldingData.get(i).get(0).contains(player)) {
+    										playerIndex = i;
+    									}
+    								}
+    								player = fieldingData.get(playerIndex).get(0);
+    								assignFielding(player, -0.4);
+    							}
+    							if(playList.get(playIndex).contains("double play")) {
+    								System.out.println("DP");
+    								String player = pbp.get(d-2).text();
+    								int playerIndex = 0;
+    								for(int i = 0; i < fieldingData.size(); i++) {
+    									if(fieldingData.get(i).get(0).contains(player)) {
+    										playerIndex = i;
+    									}
+    								}
+    								player = fieldingData.get(playerIndex).get(0);
+    							}
+    							else {
+    								String player = pbp.get(d-2).text();
+    								System.out.println("ground ball out");
+    								int playerIndex = 0;
+    								for(int i = 0; i < fieldingData.size(); i++) {
+    									if(fieldingData.get(i).get(0).contains(player)) {
+    										playerIndex = i;
+    									}
+    								}
+    								player = fieldingData.get(playerIndex).get(0);
+    							}
+    						}
+    						playIndex++;
+    					}
+    				}
+    			}
+    			pageNum += 12;
+            }
+    		catch(IOException e) {
+    		    e.getMessage();
+    		    e.printStackTrace();
+    		}  
+        }
         
         //sort list of non-duplicated players for drop-down menu selection
         ArrayList<String> tablePlayers = new ArrayList<String>();
