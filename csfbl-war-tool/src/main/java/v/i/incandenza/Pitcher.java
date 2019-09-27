@@ -1,7 +1,6 @@
 package v.i.incandenza;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 
 public class Pitcher {
 	private String playerName;
@@ -12,8 +11,9 @@ public class Pitcher {
 	private int gameStarted;
 	private double fIP;
 	private double eRA;
+	private double dWAR;
 	private ArrayList<Innings> inningsTotal = new ArrayList<Innings>();
-	private int tWAR;
+	private double tWAR;
 	private int dollarWAR;
 	private int salarY;
 	
@@ -45,6 +45,10 @@ public class Pitcher {
 		this.eRA = Double.parseDouble(era);
 	}
 	
+	public void setDef(double dRaa) {
+		this.dWAR = this.dWAR + dRaa;
+	}
+	
 	public void setYear(String year) {
 		this.playerYear = year;
 	}	
@@ -56,6 +60,10 @@ public class Pitcher {
 	public void setInnings(String innings, String team) {
 		Innings newInnings = new Innings(innings, team);
 		this.inningsTotal.add(newInnings);
+	}
+	
+	public void setWAR(double war) {
+		this.tWAR = this.tWAR + war;
 	}
 	
 	public String getName() {

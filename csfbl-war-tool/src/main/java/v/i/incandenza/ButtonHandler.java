@@ -3,8 +3,6 @@ package v.i.incandenza;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
-import javax.swing.JTabbedPane;
-import javax.swing.JTextField;
 
 public class ButtonHandler implements ActionListener {	
 	private ArrayList<String> yearList;

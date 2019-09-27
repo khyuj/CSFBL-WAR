@@ -6,24 +6,16 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Collections;
 import org.jsoup.Jsoup;
-import org.jsoup.*;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.jsoup.safety.Whitelist;
-import org.jsoup.safety.Cleaner;
-import javax.swing.JTabbedPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JComboBox;
 import javax.swing.JTable;
 import javax.swing.DefaultComboBoxModel;
-import java.awt.GridBagLayout;
-import java.awt.GridBagConstraints;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
-import java.awt.Dimension;
-import java.awt.Toolkit;
 import java.awt.event.*;
 import java.io.IOException;
 
@@ -62,8 +54,53 @@ public class StatsPanel extends JPanel {
 	    this.revalidate();	 
 	}
 	
-	public void assignFielding(String name, double runs) {
-		System.out.println(name + ": " + runs);		
+	public void assignFielding(String name, double runs, String year, String position) {
+		System.out.println(name + ": " + runs);
+		if(position == "pitcher") {
+			for(int i = 0; i < pitcherList.size(); i++) {
+				if(pitcherList.get(i).getName().equals(name) && pitcherList.get(i).getYear().equals(year)) {
+					pitcherList.get(i).setDef(runs);
+				}
+			}
+		}
+		else {
+			for(int i = 0; i < playerList.size(); i++) {
+				if(playerList.get(i).getName().equals(name) && playerList.get(i).getYear().equals(year)) {
+					playerList.get(i).setDef(runs);
+				}
+			}
+		}
+	}
+	
+	public String positionFormat(String position) {
+		if(position.equals("P")) {
+			position = "pitcher";
+		}
+		else if(position.equals("C")) {
+			position = "to the catcher";
+		}
+		else if(position.equals("1B")) {
+			position = "to first";
+		}
+		else if(position.equals("2B")) {
+			position = "to second";
+		}
+		else if(position.equals("SS")) {
+			position = "to short";
+		}
+		else if(position.equals("3B")) {
+			position = "to third";
+		}
+		else if(position.equals("LF")) {
+			position = "to left";
+		}
+		else if(position.equals("CF")) {
+			position = "to center";
+		}
+		else if(position.equals("RF")) {
+			position = "to right";
+		}
+		return position;
 	}
 	
 	public StatsPanel(ArrayList<String> years, String league) {
@@ -242,18 +279,18 @@ public class StatsPanel extends JPanel {
         				Element oNode = batParents.get(a+17);
         				String xRaa = oNode.text();       				
         				String playerYear = yearList.get(i);
-        				//Element playerID = batParents.get(a+1);
-        				//String playerLink = playerID.child(0).attr("href");
-        				//playerLink = playerLink.replaceAll("[^\\d]", "" );
+        				Element playerID = batParents.get(a+1);
+        				String playerLink = playerID.child(0).attr("href");
+        				playerLink = playerLink.replaceAll("[^\\d]", "" );
         				//String playerURL = salaryURL + playerLink;
         				//Document salaryPage = Jsoup.connect(playerURL).get();
+        				//Elements salaryParents = salaryPage.select("tbody > tr > td");
         				String salaryString = "0";
         				//for(int z = 0; z < salaryParents.size(); z+=13) {
-        					//if(salaryParents.get(z).text().equals(playerYear)) {
-        						//salaryString = salaryParents.get(z+12).text();
-        						//salaryString = salaryString.replaceAll("[^\\d]", "" );
-        						//System.out.println(salaryString);
-        					//}
+        				//	if(salaryParents.get(z).text().equals(playerYear)) {
+        				//		salaryString = salaryParents.get(z+12).text();
+        				//		salaryString = salaryString.replaceAll("[^\\d]", "" );
+        				//	}
         				//}		      				
         				boolean match = false; 
         				boolean teamSwitch = false;
@@ -313,10 +350,10 @@ public class StatsPanel extends JPanel {
         				//Elements salaryParents = salaryPage.select("tbody > tr > td");
         				String salaryString = "0";
         				//for(int z = 0; z < salaryParents.size(); z+=13) {
-        					//if(salaryParents.get(z).text().equals(playerYear)) {
-        						//salaryString = salaryParents.get(z+12).text();
-        						//salaryString = salaryString.replaceAll("[^\\d]", "" );
-        					//}
+        				//	if(salaryParents.get(z).text().equals(playerYear)) {
+        				//		salaryString = salaryParents.get(z+12).text();
+        				//		salaryString = salaryString.replaceAll("[^\\d]", "" );
+        				//	}
         				//}
         				boolean match = false;
         				boolean switchTeam = false;
@@ -449,7 +486,7 @@ public class StatsPanel extends JPanel {
 			} 
         }
         //get PBP url range for most recent season
-        for(int u = Integer.parseInt(yearList.get(yearList.size() - 1)) - Integer.parseInt(yearList.get(0)); u >= 0; u--) {
+        for(int u = yearList.size() - 1; u >= 0; u--) {
         	try {
         		//get total games played this season
         		int totalGames = 0;
@@ -534,140 +571,580 @@ public class StatsPanel extends JPanel {
     			upperLink = upperLink - 1;
     			totalGames = totalGames - 1;
     			int firstID = upperLink - totalGames;
+    			System.out.println(firstID + ": first league game");
     			for(int y = firstID; y < upperLink; y++) {
-    				Document playByPlay = Jsoup.connect(pbpURL + y).get();
+    				Document playByPlay = Jsoup.connect(pbpURL + y).timeout(0).get();
+    				System.out.println(pbpURL + y);
     				Element div = playByPlay.selectFirst("div[class=col-sm-8]");
     				String playText = div.text();
     				//split PbP into list of separate plays and remove extraneous strings
     				ArrayList<String> playList = new ArrayList<>(Arrays.asList(playText.split("\\.|:")));
     				for (int f = 0; f < playList.size(); f++) {
-    					if(playList.get(f).contains("SCORE:") || playList.get(f).contains("hits.)")) {
+    					if(playList.get(f).contains("runs,")) {
+    						playList.remove(f);
+    					}
+    					if(playList.get(f).contains("Bottom of") && f != 0) {
+    						playList.remove(f);
+    					}
+    					if(playList.get(f).contains("Top of") && f != 0) {
     						playList.remove(f);
     					}
     				}
     				Elements pbp = div.children();
     				Elements players = playByPlay.select("tbody > tr > td");
+    				Elements teams = playByPlay.select("div > table > caption");
+    				String teamOne = teams.get(0).text();
+    				String teamTwo = teams.get(1).text();
     				fieldingData = new ArrayList<ArrayList<String>>();
     				//create temporary list of player involved in game
     				for(int c = 0; c < players.size(); c+=3) {
     					playerData = new ArrayList<String>();
     					String name = players.get(c+1).child(0).text();
+    					String position = players.get(c+2).text();
+    					String playerID = players.get(c+1).child(0).attr("href");
+    					String formattedPosition = positionFormat(position);
     					String last = name.split(" ")[1];
     					String first = name.split(" ")[0];
     					name = last + ", " + first;
     					playerData.add(name);
+    					playerData.add(formattedPosition);
+    					if(c < 10) {
+    						playerData.add(teams.get(0).text());
+    					}
+    					else {
+    						playerData.add(teams.get(1).text());
+    					}
+    					playerData.add(playerID);
     					fieldingData.add(playerData);
-    					System.out.println(name);
-    					for(int p = 0; p < fieldingData.size(); p++) {
-    						System.out.println(fieldingData.get(p).get(0) );
+    					//add position tally to player object
+    					for(int p = 0; p < playerList.size(); p++) {
+    						if(name.equals(playerList.get(p).getName()) && yearList.get(u).equals(playerList.get(p).getYear())) {
+    							playerList.get(p).positionTally(position);
+    							System.out.println(position + name);
+    						}
     					}
     				}
     				//go through list of plays, count fielding events, and assign run value to player object. check run values
     				int startIndex = 0;
     				int endIndex = 0;
     				int playIndex = 0;
+    				boolean topInning = true;
+    				if(pbp.get(1).text().equals(teamOne)) {
+    					 topInning = false;
+    				}
+    				else if(pbp.get(1).text().equals(teamTwo)) {
+    					topInning = true;
+    				}
+    				String pitcherTop = fieldingData.get(0).get(0);
+    				String pitcherBottom = fieldingData.get(10).get(0);
     				for(int d = 0; d < pbp.size(); d++) {
+    					System.out.println(pbp.get(d));
+    					if(pbp.get(d).is("p")) {
+    						if(topInning == true) {
+    							topInning = false;
+    							System.out.println("Bottom of the Inning ");
+    						}
+    						else if(topInning == false) {
+    							topInning = true;
+    							System.out.println("Top of the Inning ");
+    						}
+    					}
     					if(pbp.get(d).is("br")) {
-    						startIndex = endIndex;
-    						endIndex = d;
+    						boolean identified = false;
+    						endIndex = d - startIndex - 1;
+    						String[] plays = playList.get(playIndex).split(",");
+    						if(playList.get(playIndex).contains("comes in to pitch")) {
+    							if(topInning == true) {
+    								String name = pbp.get(d - 1).text();
+    								for(int p = 0; p < pitcherList.size(); p++) {
+    									if(pitcherList.get(p).getName().contains(name) && pitcherList.get(p).getYear().equals(yearList.get(u))) {
+    										ArrayList<Team> pitcherTeams = new ArrayList<Team>(pitcherList.get(p).getTeam());
+    										for(int r = 0; r < pitcherTeams.size(); r++) {
+    											if(pitcherTeams.get(r).getName().equals(fieldingData.get(10).get(2))) {
+    												name = pitcherList.get(p).getName();
+    											}
+    										}
+    									}
+    								}
+    								pitcherTop = name;
+    							}
+    							else if(topInning == false) {
+    								String name = pbp.get(d - 1).text();
+    								for(int p = 0; p < pitcherList.size(); p++) {
+    									if(pitcherList.get(p).getName().contains(name) && pitcherList.get(p).getYear().equals(yearList.get(u))) {
+    										ArrayList<Team> pitcherTeams = new ArrayList<Team>(pitcherList.get(p).getTeam());
+    										for(int r = 0; r < pitcherTeams.size(); r++) {
+    											if(pitcherTeams.get(r).getName().equals(fieldingData.get(0).get(2))) {
+    												name = pitcherList.get(p).getName();
+    											}
+    										}
+    									}
+    								}
+    								pitcherBottom = name;
+    							}
+    						}
     						if(playList.get(playIndex).contains("hits a fly ball")) {
     							if(playList.get(playIndex).contains("error")) {
-    								String[] playElements = playList.get(playIndex).split(",");
+    								identified = true;
     								System.out.println("error");
-    								String player = pbp.get(d-2).text();
-    								int playerIndex = 0;
-    								for(int i = 0; i < fieldingData.size(); i++) {
-    									if(fieldingData.get(i).get(0).contains(player)) {
-    										playerIndex = i;
+    								String name = "";
+    								for(int z = 0; z < endIndex; z++) {
+    									if(plays[z].contains("commits an error")) {
+    										name = pbp.get(d - (endIndex - z)).text();
+    										System.out.println(name);
     									}
+    								}    								
+    								String player = "";
+    								String position = "";
+    								if(topInning == true) {
+    									for(int i = fieldingData.size()/2; i < fieldingData.size(); i++) {
+	    									if(fieldingData.get(i).get(0).contains(name) && plays[0].contains(fieldingData.get(i).get(1))) {
+	    	    								player = fieldingData.get(i).get(0);
+	    	    								position = fieldingData.get(i).get(1);
+	    									}
+	    								}
     								}
-    								player = fieldingData.get(playerIndex).get(0);
-    								assignFielding(player, -0.6);
+    								else if(topInning == false) {
+    									for(int i = 0; i < fieldingData.size()/2; i++) {
+	    									if(fieldingData.get(i).get(0).contains(name) && plays[0].contains(fieldingData.get(i).get(1))) {
+	    	    								player = fieldingData.get(i).get(0);
+	    	    								position = fieldingData.get(i).get(1);
+	    									}
+	    								}
+    								}
+    								assignFielding(player, -0.5, yearList.get(u), position);
     							}
-    							else if(playList.get(playIndex).contains("tags up")) {
+    							else if(playList.get(playIndex).contains("tags up") && identified == false) {
+    								identified = true;
     								System.out.println("sac fly");
-    								String player = pbp.get(d-4).text();
-    								int playerIndex = 0;
-    								for(int i = 0; i < fieldingData.size(); i++) {
-    									if(fieldingData.get(i).get(0).contains(player)) {
-    										playerIndex = i;
+    								String name = "";
+    								for(int z = 0; z < endIndex; z++) {
+    									if(plays[z].contains("caught by")) {
+    										name = pbp.get(d - (endIndex - z)).text();
+    										System.out.println(name);
     									}
     								}
-    								player = fieldingData.get(playerIndex).get(0);
-    								assignFielding(player, 0.7);
+    								String player = "";
+    								String position = "";
+    								if(topInning == true) {
+    									for(int i = fieldingData.size()/2; i < fieldingData.size(); i++) {
+	    									if(fieldingData.get(i).get(0).contains(name) && plays[0].contains(fieldingData.get(i).get(1))) {
+	    	    								player = fieldingData.get(i).get(0);
+	    	    								position = fieldingData.get(i).get(1);
+	    									}
+	    								}
+    									for(int p = 0; p < pitcherList.size(); p++) {
+    										if(pitcherList.get(p).equals(pitcherTop)) {
+    											pitcherList.get(p).setWAR(0.03);
+    										}
+    									}
+    								}
+    								else if(topInning == false) {
+    									for(int i = 0; i < fieldingData.size()/2; i++) {
+	    									if(fieldingData.get(i).get(0).contains(name) && plays[0].contains(fieldingData.get(i).get(1))) {
+	    	    								player = fieldingData.get(i).get(0);
+	    	    								position = fieldingData.get(i).get(1);
+	    									}
+	    								}
+    									for(int p = 0; p < pitcherList.size(); p++) {
+    										if(pitcherList.get(p).equals(pitcherBottom)) {
+    											pitcherList.get(p).setWAR(0.03);
+    										}
+    									}
+    								}
+    								assignFielding(player, -0.23, yearList.get(u), position);
     							}
-    							else if(playList.get(playIndex).contains("thrown out")) {
-    								System.out.println("outfield assist");
-    								String player = pbp.get(d-4).text();
-    								int playerIndex = 0;
-    								for(int i = 0; i < fieldingData.size(); i++) {
-    									if(fieldingData.get(i).get(0).contains(player)) {
-    										playerIndex = i;
+    							else if(playList.get(playIndex).contains("thrown out") && identified == false) {
+    								identified = true;
+    								System.out.println("baserunning out");
+    								String name = "";
+    								for(int z = 0; z < endIndex; z++) {
+    									if(plays[z].contains("caught by")) {
+    										name = pbp.get(d - (endIndex - z)).text();
+    										System.out.println(name);
+    										break;
     									}
     								}
-    								player = fieldingData.get(playerIndex).get(0);
-    								assignFielding(player, 0.7);
-    								//re-check this, temporary
-    								player = pbp.get(d-1).text();
-    								playerIndex = 0;
-    								for(int i = 0; i < fieldingData.size(); i++) {
-    									if(fieldingData.get(i).get(0).contains(player)) {
-    										playerIndex = i;
+    								String player = "";
+    								String position = "";
+    								if(topInning == true) {
+    									for(int i = fieldingData.size()/2; i < fieldingData.size(); i++) {
+	    									if(fieldingData.get(i).get(0).contains(name) && plays[0].contains(fieldingData.get(i).get(1))) {
+	    	    								player = fieldingData.get(i).get(0);
+	    	    								position = fieldingData.get(i).get(1);
+	    									}
+	    								}
+    									for(int p = 0; p < pitcherList.size(); p++) {
+    										if(pitcherList.get(p).equals(pitcherTop)) {
+    											pitcherList.get(p).setWAR(0.03);
+    										}
     									}
     								}
-    								player = fieldingData.get(playerIndex).get(0);
-    								assignFielding(player, 0.5);
+    								else if(topInning == false) {
+    									for(int i = 0; i < fieldingData.size()/2; i++) {
+	    									if(fieldingData.get(i).get(0).contains(name) && plays[0].contains(fieldingData.get(i).get(1))) {
+	    	    								player = fieldingData.get(i).get(0);
+	    	    								position = fieldingData.get(i).get(1);
+	    									}
+	    								}
+    									for(int p = 0; p < pitcherList.size(); p++) {
+    										if(pitcherList.get(p).equals(pitcherBottom)) {
+    											pitcherList.get(p).setWAR(0.03);
+    										}
+    									}
+    								}
+    								assignFielding(player, 0.52, yearList.get(u), position);
     							}
-    							else {
-    								String player = pbp.get(d-1).text();
-    								System.out.println("fly ball catch");
-    								int playerIndex = 0;
-    								for(int i = 0; i < fieldingData.size(); i++) {
-    									if(fieldingData.get(i).get(0).contains(player)) {
-    										playerIndex = i;
+    							else if(playList.get(playIndex).contains("foul territory") && identified == false) {
+    								identified = true;
+    								String url = "";
+    								for(int z = 0; z < endIndex; z++) {
+    									if(plays[z].contains("caught by")) {
+    										url = pbp.get(d - (endIndex - z)).attr("href");
     									}
     								}
-    								player = fieldingData.get(playerIndex).get(0);
-    								assignFielding(player, 0.7);
+    								Document playerName= Jsoup.connect("https://www.csfbl.com" + url).timeout(0).get();
+    								Elements metas = playerName.select("head > meta");
+    								String name = metas.get(3).attr("content");
+    								String firstName = name.split("\\s+")[0];
+    								String lastName = name.split("\\s+")[1];
+    								name = lastName + ", " + firstName;
+    								String player = "";
+    								String position = "";
+    								for(int i = 0; i < fieldingData.size(); i++) {
+    									if(fieldingData.get(i).get(0).equals(name)) {
+    	    								player = fieldingData.get(i).get(0);
+    	    								position = fieldingData.get(i).get(1);
+    									}    									
+    								}
+    								assignFielding(player, 0.11, yearList.get(u), position);
+    								if(topInning == true) {
+    									for(int p = 0; p < pitcherList.size(); p++) {
+    										if(pitcherList.get(p).equals(pitcherTop)) {
+    											pitcherList.get(p).setWAR(0.03);
+    										}
+    									}
+    								}
+    								else if(topInning == false) {
+    									for(int p = 0; p < pitcherList.size(); p++) {
+    										if(pitcherList.get(p).equals(pitcherBottom)) {
+    											pitcherList.get(p).setWAR(0.03);
+    										}
+    									}
+    								}
+    							}
+    							else if(playList.get(playIndex).contains("caught by") && identified == false){
+    								identified = true;
+    								String name = "";
+    								for(int z = 0; z < endIndex; z++) {
+    									if(plays[z].contains("caught by")) {
+    										name = pbp.get(d - (endIndex - z)).text();
+    										System.out.println(name);
+    									}
+    								}
+    								String player = "";
+    								String position = "";
+    								if(topInning == true) {
+    									for(int i = fieldingData.size()/2; i < fieldingData.size(); i++) {
+	    									if(fieldingData.get(i).get(0).contains(name) && plays[0].contains(fieldingData.get(i).get(1))) {
+	    	    								player = fieldingData.get(i).get(0);
+	    	    								position = fieldingData.get(i).get(1);
+	    									}
+	    								}
+    									for(int p = 0; p < pitcherList.size(); p++) {
+    										if(pitcherList.get(p).equals(pitcherTop)) {
+    											pitcherList.get(p).setWAR(0.03);
+    										}
+    									}
+    								}
+    								else if(topInning == false) {
+    									for(int i = 0; i < fieldingData.size()/2; i++) {
+	    									if(fieldingData.get(i).get(0).contains(name) && plays[0].contains(fieldingData.get(i).get(1))) {
+	    	    								player = fieldingData.get(i).get(0);
+	    	    								position = fieldingData.get(i).get(1);
+	    									}
+	    								}
+    									for(int p = 0; p < pitcherList.size(); p++) {
+    										if(pitcherList.get(p).equals(pitcherBottom)) {
+    											pitcherList.get(p).setWAR(0.03);
+    										}
+    									}
+    								}
+    								assignFielding(player, 0.8, yearList.get(u), position);
     							}
     						}
-    						else if(playList.get(playIndex).contains("hits a ground ball")) {
-    							if(playList.get(playIndex).contains("error")) {
+    						else if(playList.get(playIndex).contains("hits a ground ball") && identified == false) {
+    							int doublePlay = 0;
+    							for(int a = 0; a < plays.length; a++) {
+    								if(plays[a].contains("out at")) {
+    									doublePlay++;
+    								}
+    							}
+    							if(doublePlay == 2) {
+    								identified = true;
+    								System.out.println("double play");
+    								String name = "";
+    								int match = 0;
+    								for(int z = 0; z < endIndex; z++) {
+    									if(plays[z].contains("fielded by")) {
+    										name = pbp.get(d - (endIndex - z)).text();
+    										match = z;
+    										break;
+    									}
+    								}
+    								String player = "";
+    								String url = "";
+    								String position = "";
+    								if(topInning == true) {
+    									for(int i = fieldingData.size()/2; i < fieldingData.size(); i++) {
+	    									if(fieldingData.get(i).get(0).contains(name) && plays[0].contains(fieldingData.get(i).get(1))) {
+	    	    								player = fieldingData.get(i).get(0);
+	    	    								position = fieldingData.get(i).get(1);
+	    									}
+	    								}
+    									for(int p = 0; p < pitcherList.size(); p++) {
+    										if(pitcherList.get(p).equals(pitcherTop)) {
+    											pitcherList.get(p).setWAR(0.06);
+    										}
+    									}
+    								}
+    								else if(topInning == false) {
+    									for(int i = 0; i < fieldingData.size()/2; i++) {
+	    									if(fieldingData.get(i).get(0).contains(name) && plays[0].contains(fieldingData.get(i).get(1))) {
+	    	    								player = fieldingData.get(i).get(0);
+	    	    								position = fieldingData.get(i).get(1);
+	    									}
+	    								}
+    									for(int p = 0; p < pitcherList.size(); p++) {
+    										if(pitcherList.get(p).equals(pitcherTop)) {
+    											pitcherList.get(p).setWAR(0.06);
+    										}
+    									}
+    								}
+    								assignFielding(player, 0.17, yearList.get(u), position);
+    								for(int z = 0; z < endIndex; z++) {
+    									if(plays[z].contains("fielded by") && z != match) {
+    										url = pbp.get(d - (endIndex - z)).attr("href");
+    									}
+    								}
+    								Document playerName= Jsoup.connect("https://www.csfbl.com" + url).timeout(0).get();
+    								Elements metas = playerName.select("head > meta");
+    								name = metas.get(3).attr("content");
+    								String firstName = name.split("\\s+")[0];
+    								String lastName = name.split("\\s+")[1];
+    								name = lastName + ", " + firstName;
+    								for(int i = 0; i < fieldingData.size(); i++) {
+    									if(fieldingData.get(i).get(0).equals(name)) {
+    	    								player = fieldingData.get(i).get(0);
+    	    								position = fieldingData.get(i).get(1);
+    									}
+    								}
+    								assignFielding(player, 0.09, yearList.get(u), position);
+    							}
+    							if(playList.get(playIndex).contains("error") && identified == false) {
+    								identified = true;
     								System.out.println("ground ball error");
-    								String player = pbp.get(d-2).text();
-    								int playerIndex = 0;
-    								for(int i = 0; i < fieldingData.size(); i++) {
-    									if(fieldingData.get(i).get(0).contains(player)) {
-    										playerIndex = i;
+    								String url = "";
+    								for(int z = 0; z < endIndex; z++) {
+    									if(plays[z].contains("commits an error")) {
+    										url = pbp.get(d - (endIndex - z)).attr("href");
     									}
     								}
-    								player = fieldingData.get(playerIndex).get(0);
-    								assignFielding(player, -0.4);
-    							}
-    							if(playList.get(playIndex).contains("double play")) {
-    								System.out.println("DP");
-    								String player = pbp.get(d-2).text();
-    								int playerIndex = 0;
+    								Document playerName= Jsoup.connect("https://www.csfbl.com" + url).timeout(0).get();
+    								Elements metas = playerName.select("head > meta");
+    								String name = metas.get(3).attr("content");
+    								String firstName = name.split("\\s+")[0];
+    								String lastName = name.split("\\s+")[1];
+    								name = lastName + ", " + firstName;
+    								String player = "";
+    								String position = "";
     								for(int i = 0; i < fieldingData.size(); i++) {
-    									if(fieldingData.get(i).get(0).contains(player)) {
-    										playerIndex = i;
+    									if(fieldingData.get(i).get(0).equals(name)) {
+    	    								player = fieldingData.get(i).get(0);
+    	    								position = fieldingData.get(i).get(1);
     									}
     								}
-    								player = fieldingData.get(playerIndex).get(0);
+    								assignFielding(player, -0.5, yearList.get(u), position);
     							}
-    							else {
-    								String player = pbp.get(d-2).text();
+    							else if(playList.get(playIndex).contains("hits a ground ball to") && identified == false) {
+    								identified = true;
     								System.out.println("ground ball out");
-    								int playerIndex = 0;
-    								for(int i = 0; i < fieldingData.size(); i++) {
-    									if(fieldingData.get(i).get(0).contains(player)) {
-    										playerIndex = i;
+    								String name = "";
+    								String url = "";
+    								boolean noPlayer = true;
+    								for(int z = 0; z < endIndex; z++) {
+    									if(plays[z].contains("fielded by")) {
+    										name = pbp.get(d - (endIndex - z)).text();
+    										System.out.println(name);
+    										noPlayer = false;
     									}
     								}
-    								player = fieldingData.get(playerIndex).get(0);
+    								for(int z = 0; z < endIndex; z++) {
+    									if(noPlayer == true) {
+        									if(plays[z].contains("hits a ground ball to first")) {
+        										for(int h = 0; h < fieldingData.size(); h++) {
+        											if(fieldingData.get(h).get(1).equals("to first")) {
+        												url = fieldingData.get(h).get(3);
+        											}
+        										}
+        									}
+        								}
+    								}
+    								String player = "";
+    								String position = "";
+    								if(noPlayer == true) {
+	    								Document playerName= Jsoup.connect("https://www.csfbl.com" + url).timeout(0).get();
+	    								Elements metas = playerName.select("head > meta");
+	    								name = metas.get(3).attr("content");
+	    								String firstName = name.split("\\s+")[0];
+	    								String lastName = name.split("\\s+")[1];
+	    								name = lastName + ", " + firstName;
+	    								for(int i = 0; i < fieldingData.size(); i++) {
+	    									if(fieldingData.get(i).get(0).equals(name)) {
+	    	    								player = fieldingData.get(i).get(0);
+	    	    								position = fieldingData.get(i).get(1);
+	    									}
+	    								}
+    								}
+    								else if(noPlayer == false) {
+    									if(topInning == true) {
+    										for(int i = fieldingData.size()/2; i < fieldingData.size(); i++) {
+    	    									if(fieldingData.get(i).get(0).contains(name) && plays[0].contains(fieldingData.get(i).get(1))) {
+    	    	    								player = fieldingData.get(i).get(0);
+    	    	    								position = fieldingData.get(i).get(1);
+    	    									}
+    	    								}
+    										for(int p = 0; p < pitcherList.size(); p++) {
+        										if(pitcherList.get(p).equals(pitcherTop)) {
+        											pitcherList.get(p).setWAR(0.04);
+        										}
+        									}
+        								}
+        								else if(topInning == false) {
+        									for(int i = 0; i < fieldingData.size()/2; i++) {
+    	    									if(fieldingData.get(i).get(0).contains(name) && plays[0].contains(fieldingData.get(i).get(1))) {
+    	    	    								player = fieldingData.get(i).get(0);
+    	    	    								position = fieldingData.get(i).get(1);
+    	    									}
+    	    								}
+        									for(int p = 0; p < pitcherList.size(); p++) {
+        										if(pitcherList.get(p).equals(pitcherTop)) {
+        											pitcherList.get(p).setWAR(0.04);
+        										}
+        									}
+        								}
+    								}
+    								assignFielding(player, 0.08, yearList.get(u), position);
     							}
+    						}
+    						else if(playList.get(playIndex).contains("thrown out") && identified == false) {
+    							identified = true;
+    							int assistIndex = endIndex - 1;
+    							System.out.println("outfield assist");
+    							String name = "";
+								for(int z = 0; z < assistIndex; z++) {
+									if(plays[z].contains("fielded by")) {
+										name = pbp.get(d - (assistIndex - z)).text();
+									}
+									break;
+								}
+								String player = "";
+    							String position = "";
+    							if(topInning == true) {
+    								for(int j = fieldingData.size()/2; j < fieldingData.size(); j++) {
+    									if(fieldingData.get(j).get(0).contains(name) && plays[0].contains(fieldingData.get(j).get(1))) {
+    										player = fieldingData.get(j).get(0);
+    										position = fieldingData.get(j).get(1);
+    									}
+    								}
+    							}
+    							else if(topInning == false) {
+    								for(int j = 0; j < fieldingData.size()/2; j++) {
+    									if(fieldingData.get(j).get(0).contains(name) && plays[0].contains(fieldingData.get(j).get(1))) {
+    										player = fieldingData.get(j).get(0);
+    										position = fieldingData.get(j).get(1);
+    									}
+    								}
+    							}
+								assignFielding(player, 0.5, yearList.get(u), position);    							
+    						}
+    						else if(playList.get(playIndex).contains("gets caught attempting") && identified == false) {
+    							identified = true;
+    							String player = "";
+    							if(topInning == true) {
+    								for(int j = fieldingData.size()/2; j < fieldingData.size(); j++) {
+    									if(fieldingData.get(j).get(1).contains("catcher")) {
+    										player = fieldingData.get(j).get(0);
+    									}
+    								}
+    								assignFielding(pitcherTop, 0.15, yearList.get(u), "P");
+    							}
+    							else if(topInning == false) {
+    								for(int j = 0; j < fieldingData.size()/2; j++) {
+    									if(fieldingData.get(j).get(1).contains("catcher")) {
+    										player = fieldingData.get(j).get(0);
+    									}
+    								}
+    								assignFielding(pitcherBottom, 0.15, yearList.get(u), "P");
+    							}
+    							assignFielding(player, 0.2, yearList.get(u), "C");
+    						}
+    						else if(playList.get(playIndex).contains("steals") && identified == false) {
+    							identified = true;
+    							String player = "";
+    							if(topInning == true) {
+    								for(int j = fieldingData.size()/2; j < fieldingData.size(); j++) {
+    									if(fieldingData.get(j).get(1).contains("catcher")) {
+    										player = fieldingData.get(j).get(0);
+    									}
+    								}
+    								assignFielding(pitcherTop, -0.15, yearList.get(u), "P");
+    							}
+    							else if(topInning == false) {
+    								for(int j = 0; j < fieldingData.size()/2; j++) {
+    									if(fieldingData.get(j).get(1).contains("catcher")) {
+    										player = fieldingData.get(j).get(0);
+    									}
+    								}
+    								assignFielding(pitcherBottom, -0.15, yearList.get(u), "P");
+    							}
+    							assignFielding(player, -0.2, yearList.get(u), "C");
+    						}
+    						else if(playList.get(playIndex).contains("advances") && identified == false) {
+    							System.out.println("extra bases");
+    							identified = true;
+    							int assistIndex = endIndex - 1;;
+    							String name = "";
+								for(int z = 0; z < assistIndex; z++) {
+									if(plays[z].contains("fielded by")) {
+										name = pbp.get(d - (assistIndex - z)).text();
+									}
+									break;
+								}
+    							String player = "";
+    							String position = "";
+    							if(topInning == true) {
+    								for(int j = fieldingData.size()/2; j < fieldingData.size(); j++) {
+    									if(fieldingData.get(j).get(0).contains(name) && plays[0].contains(fieldingData.get(j).get(1))) {
+    										player = fieldingData.get(j).get(0);
+    										position = fieldingData.get(j).get(1);
+    									}
+    								}
+    							}
+    							else if(topInning == false) {
+    								for(int j = 0; j < fieldingData.size()/2; j++) {
+    									if(fieldingData.get(j).get(0).contains(name) && plays[0].contains(fieldingData.get(j).get(1))) {
+    										player = fieldingData.get(j).get(0);
+    										position = fieldingData.get(j).get(1);
+    									}
+    								}
+    							}
+    							assignFielding(player, -0.3, yearList.get(u), position);
     						}
     						playIndex++;
+    						startIndex = d;
+    						System.out.println(startIndex + ": startIndex");
+    						System.out.println("end loop");
     					}
     				}
     			}
@@ -676,7 +1153,123 @@ public class StatsPanel extends JPanel {
     		catch(IOException e) {
     		    e.getMessage();
     		    e.printStackTrace();
-    		}  
+    		}
+        	double catcherIndex = 0;
+        	double catcherTotal = 0;
+        	double firstIndex = 0;
+        	double firstTotal = 0;
+        	double secondIndex = 0;
+        	double secondTotal = 0;
+        	double thirdIndex = 0;
+        	double thirdTotal = 0;
+        	double shortIndex = 0;
+        	double shortTotal = 0;
+        	double leftIndex = 0;
+        	double leftTotal = 0;
+        	double centerIndex = 0;
+        	double centerTotal = 0;
+        	double rightIndex = 0;
+        	double rightTotal = 0;
+        	double pitcherIndex = 0;
+        	double pitcherTotal = 0;
+        	for(int i = 0; i < playerList.size(); i++) {
+        		if(playerList.get(i).getYear().equals(yearList.get(u))) {
+        			String position = playerList.get(i).getPos();
+        			double defense = playerList.get(i).getDWAR();
+        			double weight = (playerList.get(i).getGames()/160);
+        			defense = (defense*weight)*100;
+        			int tempD = (int) defense;
+        			defense = tempD/100;
+        			if(position.equals("C")) {
+        				catcherTotal = catcherTotal + defense;
+        				catcherIndex++;
+        			}
+        			if(position.equals("1B")) {
+        				firstTotal = firstTotal + defense;
+        				firstIndex++;
+        			}
+        			if(position.equals("2B")) {
+        				secondTotal = secondTotal + defense;
+        				secondIndex++;
+        			}
+        			if(position.equals("SS")) {
+        				shortTotal = shortTotal + defense;
+        				shortIndex++;
+        			}
+        			if(position.equals("3B")) {
+        				thirdTotal = thirdTotal + defense;
+        				thirdIndex++;
+        			}
+        			if(position.equals("LF")) {
+        				leftTotal = leftTotal + defense;
+        				leftIndex++;
+        			}
+        			if(position.equals("CF")) {
+        				centerTotal = centerTotal + defense;
+        				centerIndex++;
+        			}
+        			if(position.equals("RF")) {
+        				rightTotal = rightTotal + defense;
+        				rightIndex++;
+        			}
+        			if(position.equals("P")) {
+        				pitcherTotal = pitcherTotal + defense;
+        				pitcherIndex++;
+        			}
+        		}
+        	}
+        	double catcherAverage = catcherTotal/catcherIndex;
+        	System.out.println(catcherAverage);
+        	double firstAverage = firstTotal/firstIndex;
+        	System.out.println(firstAverage);
+        	double secondAverage = secondTotal/secondIndex;
+        	System.out.println(secondAverage);
+        	double thirdAverage = thirdTotal/thirdIndex;
+        	System.out.println(thirdAverage);
+        	double shortAverage = shortTotal/shortIndex;
+        	System.out.println(shortAverage);
+        	double rightAverage = rightTotal/rightIndex;
+        	System.out.println(rightAverage);
+        	double centerAverage = centerTotal/centerIndex;
+        	System.out.println(centerAverage);
+        	double leftAverage = leftTotal/leftIndex;
+        	System.out.println(leftAverage);
+        	double pitcherAverage = pitcherTotal/pitcherIndex;
+        	System.out.println(pitcherAverage);
+        	for(int i = 0; i < playerList.size(); i++) {
+            	String position = playerList.get(i).getPos();
+            	if(position.equals("C")) {
+            		playerList.get(i).setDWAR(catcherAverage);
+            	}
+            	if(position.equals("1B")) {
+            		playerList.get(i).setDWAR(firstAverage);
+            	}
+            	if(position.equals("2B")) {
+            		playerList.get(i).setDWAR(secondAverage);
+            	}
+            	if(position.equals("SS")) {
+            		playerList.get(i).setDWAR(shortAverage);
+            	}
+            	if(position.equals("3B")) {
+            		playerList.get(i).setDWAR(thirdAverage);
+            	}
+            	if(position.equals("LF")) {
+            		playerList.get(i).setDWAR(leftAverage);
+            	}
+            	if(position.equals("CF")) {
+            		playerList.get(i).setDWAR(centerAverage);
+            	}
+            	if(position.equals("RF")) {
+            		playerList.get(i).setDWAR(rightAverage);
+            	}
+            	if(position.equals("P")) {
+            		playerList.get(i).setDWAR(pitcherAverage);
+            	}
+            	if(position.equals("DH")) {
+            		playerList.get(i).setDWAR(0);
+            	}
+            	playerList.get(i).setWAR();
+            }
         }
         
         //sort list of non-duplicated players for drop-down menu selection

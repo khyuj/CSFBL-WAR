@@ -4,12 +4,11 @@ import java.util.ArrayList;
 import javax.swing.table.AbstractTableModel;
 
 public class DataTable extends AbstractTableModel {
-	private String[] playerColumns = {"Position", "Name", "Team", "oRAA", "dRAA", "WAR", "Salary", "$/WAR"};
+	private String[] playerColumns = {"Position", "Positions Played", "Name", "Team", "oRAA", "dRAA", "WAR", "Salary", "$/WAR"};
 	private String[] pitcherColumns = {"Position", "Name", "Team", "ERA", "FIP", "WAR", "Salary", "$/WAR" };
 	private Object[][] playerData;
 	private ArrayList<Player> playerList;
 	private ArrayList<Pitcher> pitcherList;
-	private ArrayList<Team> teamList;
 	private ArrayList<String> tablePlayers; 
 	private ArrayList<String> tablePitchers;
 	private ArrayList<ArrayList> tempTable;
@@ -107,7 +106,6 @@ public class DataTable extends AbstractTableModel {
 		
 		//populate the table based on menu selections; checks first if pitchers or position players
 		//are selected, then proceeds through each flag that was checked earlier
-		boolean positionPlayer = false;		
 		if(!menuPosition.equals("All Pitchers") && !menuPosition.equals("Relief Pitchers")) {
 			if(!menuPosition.equals("Position Players")) {
 				System.out.println("position switch");
@@ -202,9 +200,9 @@ public class DataTable extends AbstractTableModel {
 					tempTable.add(tempData);
 				}
 			}
-			playerData = new Object[tempTable.size()][8];
+			playerData = new Object[tempTable.size()][9];
 			for(int a = 0; a < tempTable.size(); a++) {
-				for(int b = 0; b < 8; b++) {
+				for(int b = 0; b < 9; b++) {
 					playerData[a][b] = tempTable.get(a).get(b);
 				}
 			}
@@ -221,8 +219,6 @@ public class DataTable extends AbstractTableModel {
 				double tempERA = 0;
 				double tempFIP = 0;
 				double tempInnings = 0;
-				int gameWeight = 0;
-				int rateIndex = 1;
 				double warCounter = 0;
 				double salaryCounter = 0;
 				double dollarCounter = 0;
@@ -233,8 +229,7 @@ public class DataTable extends AbstractTableModel {
 					boolean add = true;
 					if(tablePitchers.get(a).equals(pitcherList.get(b).getName())) {
 						tempPlayer = pitcherList.get(b);		
-						tempTeams = new ArrayList<Team>(tempPlayer.getTeam());						
-						gameWeight = tempPlayer.getGames()/160;
+						tempTeams = new ArrayList<Team>(tempPlayer.getTeam());
 						tempERA = tempPlayer.getERA();
 						tempFIP = tempPlayer.getFIP();
 						if(Double.toString(tempERA).equals("-")) {
@@ -291,7 +286,6 @@ public class DataTable extends AbstractTableModel {
 						warCounter = warCounter + tempPlayer.getTWAR();
 						salaryCounter = salaryCounter + tempPlayer.getSalary();
 						dollarCounter = (dollarCounter + tempPlayer.getDollars())/dollarIndex;
-						rateIndex++;
 						dollarIndex++;							
 					}
 				}
@@ -388,6 +382,7 @@ public class DataTable extends AbstractTableModel {
 			}
 			tempData = new ArrayList();
 			tempData.add(tempPlayer.getPos());
+			tempData.add(tempPlayer.getPositions());
 			tempData.add(tempPlayer.getName());
 			tempData.add(tempTeams.get(tempTeams.size()-1).getName());
 			tempData.add(owarCounter);
@@ -399,7 +394,7 @@ public class DataTable extends AbstractTableModel {
 		}
 		playerData = new Object[tempTable.size()][8];
 		for(int a = 0; a < tempTable.size(); a++) {
-			for(int b = 0; b < 8; b++) {
+			for(int b = 0; b < 9; b++) {
 				playerData[a][b] = tempTable.get(a).get(b);
 			}
 		}
@@ -409,7 +404,6 @@ public class DataTable extends AbstractTableModel {
 			   	     ArrayList<String> playerTable, ArrayList<String> pitcherTable) {	
 		this.playerList = new ArrayList<Player>(players);
 		this.pitcherList = new ArrayList<Pitcher>(pitchers);
-		this.teamList = new ArrayList<Team>(teams);
 		this.tablePlayers = new ArrayList<String>(playerTable);
 		this.tablePitchers = new ArrayList<String>(pitcherTable);
 		initialize();
