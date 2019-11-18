@@ -7,7 +7,7 @@ import javax.swing.JFrame;
 import javax.swing.JTabbedPane;
 
 public class Window extends JFrame {
-	private JFrame frame;
+	private static JFrame frame;
 	private static JTabbedPane tabbedPane;
 	
 	public Window() {
@@ -15,7 +15,17 @@ public class Window extends JFrame {
 	}
 	
 	public static void switchPanel() {
-		tabbedPane.setSelectedIndex(1);	
+		tabbedPane.setSelectedIndex(1);
+	}
+	
+	public static void showProgress() {
+		tabbedPane.setSelectedIndex(1);
+		System.out.println("switch");
+	}
+	
+	public static void addProgress(ProgressBar jp) {
+		ProgressBar progressBar = jp;
+		tabbedPane.addTab("Working...", progressBar);
 	}
 	
 	public static void addPanel(StatsPanel sp) {		

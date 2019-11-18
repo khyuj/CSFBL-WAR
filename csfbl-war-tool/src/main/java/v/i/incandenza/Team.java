@@ -3,12 +3,7 @@ package v.i.incandenza;
 public class Team {
 	private String name;
 	private int ID;
-	
-	public void setValues(String n, int i) {
-		this.name = n;
-		this.ID = i;
-	}
-	
+		
 	public String getName() {
 		return this.name;
 	}
@@ -17,7 +12,8 @@ public class Team {
 		return this.ID;
 	}
 	
-	public Team() {
-		
+	public Team(String n, int i) {
+		this.name = n;
+		this.ID = i;
 	}
 }
